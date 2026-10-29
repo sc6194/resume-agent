@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}部署指引 · 求职简历助手{% endblock %}
+{% block content %}
+<h1>部署项目：{{ project.name }}</h1>
+
+<div class="card">
+  <div class="project-head">
+    <span class="badge {{ 'badge-github' if project.source == 'github' else 'badge-gitee' }}">{{ project.source }}</span>
+    <a href="{{ project.source_url }}" target="_blank">{{ project.source_url }}</a>
+    {% if project.deployed %}<span class="badge badge-deployed">已部署 ✔</span>{% endif %}
+  </div>
+  <p>{{ project.description }}</p>
+  {% if project.extra.pick_reason %}<div class="small ok-text">🎯 {{ project.extra.pick_reason }}</div>{% endif %}
+  {% if project.extra.deploy_notes %}<div class="small muted">🚀 {{ project.extra.deploy_notes }}</div>{% endif %}
+</div>
+
+<div class="card">
+  <h3>通用部署步骤（Python 项目）</h3>
+  <ol>
+    <li>克隆仓库：<code>git clone {{ project.source_url }}</code> 并进入目录</li>
+    <li>创建虚拟环境：<code>python -m venv venv</code>，激活后 <code>pip install -r requirements.txt</code></li>
+    <li>按 README 配置数据库/环境变量（.env）</li>
+    <li>本地运行：<code>python app.py</code> 或 README 中给出的启动命令</li>
+    <li>浏览器访问本地地址验证功能正常</li>
+  </ol>
+  {% if readme %}
+    <h4>仓库 README 预览</h4>
+    <pre class="readme">{{ readme }}</pre>
+    <p class="muted small">完整说明请看仓库主页的 README。</p>
+  {% endif %}
+</div>
+
+{% if not project.deployed %}
+<div class="card">
+  <h3>部署完成确认</h3>
+  <p>你按指引部署成功、本地能跑起来之后，在这里填写访问地址。确认后该项目就会标记为「已部署」，并可写入简历。</p>
+  <form method="post" action="{{ url_for('projects_deployed', project_id=project.id) }}" class="form">
+    <label>部署后的访问地址（本地地址或线上 URL）</label>
+    <input name="deploy_url" placeholder="http://127.0.0.1:5000 或 https://your-app.xxx">
+    <button class="btn" type="submit">确认部署完成，写入简历 →</button>
+  </form>
+</div>
+{% else %}
+<div class="actions">
+  <a class="btn" href="{{ url_for('resume_page') }}">去生成简历 →</a>
+</div>
+{% endif %}
+{% endblock %}

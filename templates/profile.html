@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}个人资料 · 求职简历助手{% endblock %}
+{% block content %}
+<h1>个人资料</h1>
+<p class="muted">这些信息会填充到简历模板的占位符中，也是岗位匹配时的背景信息。</p>
+
+<form method="post" class="form card">
+  <div class="grid-2">
+    <div><label>姓名</label><input name="name" value="{{ profile.name }}"></div>
+    <div><label>手机号</label><input name="phone" value="{{ profile.phone }}"></div>
+    <div><label>邮箱</label><input name="email" value="{{ profile.email }}"></div>
+    <div><label>城市（期望工作地）</label><input name="city" value="{{ profile.city }}"></div>
+    <div><label>学校</label><input name="school" value="{{ profile.school }}"></div>
+    <div><label>专业</label><input name="major" value="{{ profile.major }}"></div>
+    <div><label>学历</label><input name="degree" value="{{ profile.degree }}" placeholder="本科"></div>
+    <div><label>毕业时间</label><input name="graduation" value="{{ profile.graduation }}" placeholder="2026.06"></div>
+    <div class="span-2"><label>求职意向岗位</label><input name="target_position" value="{{ profile.target_position }}"></div>
+  </div>
+  <label>自我评价 / 个人简介（一句话概述，可写 1-2 句）</label>
+  <textarea name="summary" rows="3">{{ profile.summary }}</textarea>
+  <label>技能清单（逗号或分号分隔）</label>
+  <textarea name="skills" rows="3">{{ profile.skills }}</textarea>
+  <label>实习/工作经历（每段一段或每行一条；生成简历时 AI 会逐条判断与岗位的适配度，加分才写入并数据化改写，不适配的不写）</label>
+  <textarea name="experience" rows="6" placeholder="每行一条，如：xx事务所 · 数据分析实习生；负责xx数据清洗，处理10万条订单数据">{{ profile.experience }}</textarea>
+  <label>证书（逗号分隔）</label>
+  <textarea name="certificates" rows="2">{{ profile.certificates }}</textarea>
+  <label>语言能力（逗号分隔）</label>
+  <textarea name="languages" rows="2">{{ profile.languages }}</textarea>
+  <button class="btn" type="submit">保存个人资料</button>
+</form>
+{% endblock %}

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}简历模板 · 求职简历助手{% endblock %}
+{% block content %}
+<h1>简历模板</h1>
+<p class="muted">上传你的 Word（.docx）简历模板，生成简历时会套用它的版式。</p>
+
+<div class="card">
+  <h3>上传模板</h3>
+  <p class="muted">
+    两种填充方式：<br>
+    · <b>占位符模式（推荐）</b>：模板中放入 <code>{{ "{{NAME}}" }}</code> <code>{{ "{{PHONE}}" }}</code>
+    <code>{{ "{{EMAIL}}" }}</code> <code>{{ "{{SUMMARY}}" }}</code> <code>{{ "{{SKILLS}}" }}</code>
+    <code>{{ "{{PROJECTS}}" }}</code> <code>{{ "{{EXPERIENCE}}" }}</code>
+    <code>{{ "{{EDUCATION}}" }}</code> 等，程序会原位替换、保持你的版式。<br>
+    · <b>追加模式</b>：模板里没有占位符时，自动在「项目经历」标题后插入项目条目；没有该标题则追加到文末。
+  </p>
+  <form method="post" action="{{ url_for('template_upload') }}" enctype="multipart/form-data" class="form">
+    <input type="file" name="template" accept=".docx" required>
+    <button class="btn" type="submit">上传模板</button>
+  </form>
+</div>
+
+<h2>已上传模板（{{ templates|length }}）</h2>
+{% if templates %}
+  <ul class="file-list">
+    {% for t in templates %}
+      <li>
+        <span>📄 {{ t }}</span>
+        <form method="post" action="{{ url_for('template_delete', filename=t) }}" class="inline-form">
+          <button class="btn-danger" type="submit" onclick="return confirm('确定删除模板《{{ t }}》？')">删除</button>
+        </form>
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p class="muted">还没有上传模板。上传后即可在「生成简历」页选择使用。</p>
+{% endif %}
+{% endblock %}

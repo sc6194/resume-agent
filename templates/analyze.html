@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}岗位分析 · 求职简历助手{% endblock %}
+{% block content %}
+<h1>岗位分析</h1>
+<p class="muted">粘贴岗位信息（复制招聘页面的职位描述即可），系统会解析要求、与你的项目库匹配。</p>
+
+<div class="card">
+  <form method="post" class="form">
+    <label>岗位信息原文</label>
+    <textarea name="job_text" rows="10" required placeholder="粘贴岗位职责、任职要求、薪资等全文…"></textarea>
+    <button class="btn" type="submit">开始分析并匹配</button>
+  </form>
+</div>
+
+{% if analysis %}
+  <div class="card">
+    <h3>岗位解析结果</h3>
+    <div class="grid-2">
+      <div><b>岗位</b>：{{ analysis.position }}{% if analysis.company %} · {{ analysis.company }}{% endif %}</div>
+      {% if analysis.salary %}<div><b>薪资</b>：{{ analysis.salary }}</div>{% endif %}
+      {% if analysis.education_requirement %}<div><b>学历</b>：{{ analysis.education_requirement }}</div>{% endif %}
+    </div>
+    <h4>核心技能（按重要度）</h4>
+    <div class="skill-tags">
+      {% for s in analysis.key_skills %}
+        <span class="tag">{{ s.skill }} <em>{{ '%d%%'|format(s.weight * 100) }}</em></span>
+      {% endfor %}
+    </div>
+    {% if analysis.responsibilities %}
+      <h4>岗位职责</h4>
+      <ul class="tight">{% for r in analysis.responsibilities %}<li>{{ r }}</li>{% endfor %}</ul>
+    {% endif %}
+    {% if analysis.requirements %}
+      <h4>任职要求</h4>
+      <ul class="tight">{% for r in analysis.requirements %}<li>{{ r }}</li>{% endfor %}</ul>
+    {% endif %}
+  </div>
+{% endif %}
+
+{% if report %}
+  <div class="card">
+    <h3>项目匹配结果
+      {% if report.has_good_match %}<span class="badge badge-deployed">有适配项目</span>
+      {% else %}<span class="badge badge-warn">暂无适配</span>{% endif %}
+    </h3>
+    <p>{{ report.summary }}</p>
+    {% if report.missing_skills %}
+      <p class="muted">岗位要求但项目库整体缺失：{{ report.missing_skills|join('、') }}</p>
+    {% endif %}
+
+    {% if cards %}
+      <div class="project-list">
+        {% for c in cards %}
+          <div class="card project-card match-{{ c.extra.verdict }}">
+            <div class="project-head">
+              <b>{{ c.name }}</b>
+              <span class="score">匹配度 {{ c.score }}</span>
+            </div>
+            <div class="muted">{{ c.role }}{% if c.tech_stack %} · {{ c.tech_stack|join(' / ')|truncate(60) }}{% endif %}</div>
+            <p>{{ c.extra.reason }}</p>
+            {% if c.extra.highlight_points %}
+              <div class="small">🎯 建议突出：{{ c.extra.highlight_points|join('；') }}</div>
+            {% endif %}
+            {% if c.extra.gap %}<div class="small warn-text">差距：{{ c.extra.gap }}</div>{% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <div class="actions">
+      {% if report.has_good_match %}
+        <a class="btn" href="{{ url_for('resume_page') }}">去生成简历 →</a>
+      {% else %}
+        <p class="warn-text">没有与岗位直接匹配的项目，去开源平台找适配项目来部署吧。</p>
+        <a class="btn" href="{{ url_for('recommend_page') }}">去开源平台找项目 →</a>
+      {% endif %}
+    </div>
+  </div>
+{% elif analysis %}
+  <p class="muted">项目库为空或尚未匹配，请先到「项目库」添加项目后重新提交岗位。</p>
+{% endif %}
+
+<div class="card">
+  <h3>岗位分析历史（{{ history|length }}）</h3>
+  <p class="muted">每次分析都会存档，点击「载入」可回看该岗位的解析与匹配结果，并可直接生成简历；点「生成简历」会用该岗位作为目标。</p>
+  {% if history %}
+    <ul class="history-list">
+      {% for h in history %}
+        <li>
+          <div>
+            <b>{{ h.analysis.position }}</b>
+            {% if h.analysis.company %} · {{ h.analysis.company }}{% endif %}
+            <span class="muted small">（{{ h.time }}）</span>
+            {% if h.report.has_good_match %}<span class="badge badge-deployed">有适配</span>
+            {% else %}<span class="badge badge-warn">无适配</span>{% endif %}
+          </div>
+          <div class="muted small history-preview">{{ h.job_text[:80] }}{% if h.job_text|length > 80 %}…{% endif %}</div>
+          <div class="actions" style="margin-top:6px;">
+            <a class="btn-plain" href="{{ url_for('analyze_page', history=h.id) }}">载入查看</a>
+            <a class="btn-plain" href="{{ url_for('resume_page') }}" title="用该岗位作为目标生成简历">生成简历</a>
+            <form method="post" action="{{ url_for('analyze_delete', history_id=h.id) }}" class="inline-form">
+              <button class="btn-danger" type="submit" onclick="return confirm('确定删除这条历史记录？')">删除</button>
+            </form>
+          </div>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="muted">还没有历史记录。完成一次岗位分析后会自动存档。</p>
+  {% endif %}
+</div>
+{% endblock %}

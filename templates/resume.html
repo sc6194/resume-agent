@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}生成简历 · 求职简历助手{% endblock %}
+{% block content %}
+<h1>生成简历</h1>
+<p class="muted">
+  选择模板 → 勾选要写入的项目（AI 会针对目标岗位改写项目描述并量化）→ 生成并下载 Word 简历。
+  工作经历会自动按岗位适配度筛选：能给简历加分才写入，不适配的不写。
+</p>
+
+<form method="post" action="{{ url_for('resume_generate') }}" class="form">
+  <div class="card">
+    <h3>1. 选择简历模板</h3>
+    {% if templates %}
+      {% for t in templates %}
+        <label class="radio-line"><input type="radio" name="template" value="{{ t }}" required> 📄 {{ t }}</label>
+      {% endfor %}
+    {% else %}
+      <p class="warn-text">还没有上传模板，请先到「连接设置」→「简历模板」上传你的 Word 简历模板。</p>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h3>2. 勾选要写入的项目（AI 将针对「{{ position or '目标岗位' }}」改写）</h3>
+    {% if projects %}
+      {% for p in projects %}
+        <label class="radio-line project-pick">
+          <input type="checkbox" name="project_ids" value="{{ p.id }}">
+          <span>
+            <b>{{ p.name }}</b>
+            {% if p.deployed %}<span class="badge badge-deployed">已部署</span>{% endif %}
+            <span class="muted small">{{ p.role }}{% if p.tech_stack %} · {{ p.tech_stack|join(' / ')|truncate(50) }}{% endif %}</span>
+          </span>
+        </label>
+      {% endfor %}
+    {% else %}
+      <p class="muted">项目库为空。先去「项目库」添加项目，或从「开源推荐」选项目部署。</p>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h3>3. 工作经历（自动按岗位筛选）</h3>
+    {% if experience_text %}
+      <p class="muted small">以下工作经历来自「个人资料」，生成时逐条判断与岗位的适配度：</p>
+      <div class="readme" style="max-height: 160px;">{{ experience_text }}</div>
+      <label class="radio-line">
+        <input type="checkbox" name="filter_experience" checked>
+        <span><b>按岗位适配度自动筛选</b>：适配的写入简历（并用数据化、无学生思维的表述改写），与岗位无关的不写。取消勾选则全部按原文写入。</span>
+      </label>
+    {% else %}
+      <p class="muted">还没有填写工作/实习经历。<a href="{{ url_for('profile_page') }}">去「个人资料」粘贴工作经历</a>（生成时 AI 会判断哪段经历能给简历加分，只写入适配的）。</p>
+    {% endif %}
+  </div>
+
+  {% if projects %}
+    <button class="btn" type="submit">🚀 生成简历（AI 改写，稍等）</button>
+  {% endif %}
+</form>
+
+{% if exp_result and exp_result['items'] %}
+  <div class="card">
+    <h3>最近一次工作经历适配分析（{{ exp_result.position or '目标岗位' }} · {{ exp_result.time or '' }}）</h3>
+    <p class="muted small">判定规则：能用数据证明的用数据，不写"获得XX认可"类表述，摒弃学生思维。</p>
+    {% for it in exp_result['items'] %}
+      <div style="margin: 10px 0; padding: 10px 12px; border: 1px solid #e5ebf2; border-radius: 8px;
+                  {% if it.include %}border-left: 4px solid #1a7f37;{% else %}border-left: 4px solid #c9d2da;{% endif %}">
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 4px;">
+          {% if it.include %}<span class="badge badge-deployed">写入简历</span>
+          {% else %}<span class="badge badge-warn">不写入</span>{% endif %}
+          <span class="small muted">{{ it.reason or '' }}</span>
+        </div>
+        {% if it.raw %}<div class="small muted" style="white-space: pre-wrap;">原文：{{ it.raw }}</div>{% endif %}
+        {% if it.rewritten %}
+          <div class="small" style="white-space: pre-wrap; margin-top: 4px; color: #1f6f8b;">
+            ✏️ 改写后：{{ it.rewritten }}
+          </div>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+
+{% if resumes %}
+  <div class="card">
+    <h3>已生成的简历（最新在前）</h3>
+    <ul class="file-list">
+      {% for r in resumes %}
+        <li>
+          <span>📄 {{ r }}</span>
+          <a class="btn-plain" href="{{ url_for('resume_download', filename=r) }}">下载</a>
+          <form method="post" action="{{ url_for('resume_delete', filename=r) }}" class="inline-form">
+            <button class="btn-danger" type="submit" onclick="return confirm('确定删除这份简历？')">删除</button>
+          </form>
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+{% endif %}
+{% endblock %}

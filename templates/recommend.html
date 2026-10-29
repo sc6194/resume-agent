@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}开源推荐 · 求职简历助手{% endblock %}
+{% block content %}
+<h1>开源项目推荐</h1>
+<p class="muted">
+  当你的项目与岗位不匹配时，从这里按岗位技能在 GitHub / Gitee 搜索适配的开源项目，
+  选中后加入项目库并给出部署指引，部署完成即可写进简历。
+</p>
+
+{% if not analysis %}
+  <div class="card"><p class="warn-text">还没有岗位分析结果，请先到「岗位分析」页提交岗位信息。</p></div>
+{% else %}
+  <div class="card">
+    <h3>为「{{ analysis.position }}」搜索开源项目</h3>
+    <p class="muted">默认只取 1-2 个核心技能词（关键词太多容易搜不到）。你可以手动修改后再搜。</p>
+    <form method="post" action="{{ url_for('recommend_search') }}" class="form">
+      <label>搜索关键词（空格分隔多个词，建议 ≤ 2 个）</label>
+      <input type="text" name="keywords" value="{{ query }}" placeholder="如：flask 爬虫">
+      <button class="btn" type="submit">🔍 按此关键词搜索并挑选</button>
+    </form>
+  </div>
+
+  {% if candidates %}
+    <h2>候选项目（{{ candidates|length }}）</h2>
+    <div class="project-list">
+      {% for c in candidates %}
+        <div class="card project-card">
+          <div class="project-head">
+            <b>{{ c.full_name }}</b>
+            <span class="badge {{ 'badge-github' if c.platform == 'github' else 'badge-gitee' }}">{{ c.platform }}</span>
+            <span class="muted">⭐ {{ c.stars }} {% if c.language %}· {{ c.language }}{% endif %}</span>
+          </div>
+          <p>{{ c.description }}</p>
+          {% if c.pick_reason %}<div class="small ok-text">🎯 {{ c.pick_reason }}</div>{% endif %}
+          {% if c.deploy_notes %}<div class="small muted">🚀 {{ c.deploy_notes }}</div>{% endif %}
+          <div class="actions">
+            <a class="btn-plain" href="{{ c.html_url }}" target="_blank">查看仓库 ↗</a>
+            <form method="post" action="{{ url_for('recommend_select', idx=loop.index0) }}" class="inline-form">
+              <button class="btn" type="submit">选择这个项目 →</button>
+            </form>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endif %}
+{% endblock %}

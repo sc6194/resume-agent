@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}工作台 · 求职简历助手{% endblock %}
+{% block content %}
+<h1>工作台</h1>
+<p class="muted">按顺序完成下面几步，即可针对岗位生成简历；没有适配项目时会自动去开源平台帮你找。</p>
+
+<div class="llm-banner {{ 'banner-ok' if llm_cfg.key_ok else 'banner-warn' }}">
+  <div class="llm-icon">🤖</div>
+  <div>
+    <b>当前模型：{{ llm_cfg.label }}{% if llm_cfg.model %} · {{ llm_cfg.model }}{% endif %}</b>
+    <div class="small {{ 'ok-text' if llm_cfg.key_ok else 'warn-text' }}">
+      {{ 'API 已连接，可正常使用' if llm_cfg.key_ok else '尚未配置 API Key，岗位分析等功能暂不可用' }}
+    </div>
+  </div>
+  <a class="btn" href="{{ url_for('settings_page') }}">{{ '更换模型' if llm_cfg.key_ok else '去连接' }}</a>
+</div>
+
+<div class="steps">
+  <a class="step {{ 'done' if llm_cfg.key_ok }}" href="{{ url_for('settings_page') }}">
+    <div class="step-num">1</div>
+    <div><b>连接大模型</b><br><span class="muted">{{ '已连接 ✔' if llm_cfg.key_ok else '选择服务商填 Key' }}</span></div>
+  </a>
+  <a class="step {{ 'done' if profile_ok }}" href="{{ url_for('profile_page') }}">
+    <div class="step-num">2</div>
+    <div><b>填写个人资料</b><br><span class="muted">{{ '已填写 ✔' if profile_ok else '姓名、教育背景、技能等' }}</span></div>
+  </a>
+  <a class="step {{ 'done' if project_count > 0 }}" href="{{ url_for('projects_page') }}">
+    <div class="step-num">3</div>
+    <div><b>录入项目库</b><br><span class="muted">{{ project_count }} 个项目</span></div>
+  </a>
+  <a class="step {{ 'done' if template_count > 0 }}" href="{{ url_for('templates_page') }}">
+    <div class="step-num">4</div>
+    <div><b>上传简历模板</b><br><span class="muted">{{ template_count }} 个模板</span></div>
+  </a>
+</div>
+
+<div class="card-row">
+  <div class="card">
+    <h3>岗位分析</h3>
+    {% if has_analysis %}
+      <p>最近分析：<b>{{ last_position }}</b></p>
+      {% if has_good_match %}
+        <p class="ok-text">✔ 有适配项目，可直接生成简历</p>
+      {% else %}
+        <p class="warn-text">✘ 暂无可直接适配的项目，需去开源平台寻找</p>
+      {% endif %}
+    {% else %}
+      <p class="muted">还没分析过岗位</p>
+    {% endif %}
+    <a class="btn" href="{{ url_for('analyze_page') }}">粘贴岗位信息 →</a>
+  </div>
+  <div class="card">
+    <h3>开源项目推荐</h3>
+    <p class="muted">岗位无匹配时，从 GitHub / Gitee 按岗位技能搜索并挑选适配项目，给出部署指引</p>
+    <a class="btn" href="{{ url_for('recommend_page') }}">去推荐页 →</a>
+  </div>
+  <div class="card">
+    <h3>生成简历</h3>
+    <p>已生成 <b>{{ resume_count }}</b> 份简历</p>
+    <a class="btn" href="{{ url_for('resume_page') }}">选择模板生成 →</a>
+  </div>
+</div>
+{% endblock %}

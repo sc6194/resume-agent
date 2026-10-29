@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}连接设置 · 求职简历助手{% endblock %}
+{% block content %}
+<h1>连接设置</h1>
+
+<form method="post" class="form">
+  <div class="card">
+    <h3>大模型服务商（必填，四选一）</h3>
+    <p class="muted">岗位分析、项目匹配、简历改写都由所选服务商的大模型完成。选哪个就填哪个的 Key，其他可留着备用。</p>
+
+    <div class="provider-radios">
+      {% for key, p in providers.items() %}
+        <label class="provider-radio">
+          <input type="radio" name="llm_provider" value="{{ key }}"
+                 {{ 'checked' if settings.llm_provider == key }} onchange="switchProvider(this.value)">
+          {{ p.label }}
+        </label>
+      {% endfor %}
+    </div>
+
+    {% for key, p in providers.items() %}
+      <div class="provider-group {{ 'active' if settings.llm_provider == key }}" data-provider="{{ key }}">
+        <h4>{{ p.label }}</h4>
+        <label>API Key</label>
+        <input type="password" name="{{ key }}_api_key" value="{{ settings[key + '_api_key'] }}" placeholder="sk-...">
+        <label>接口地址{{ '（必填）' if key == 'custom' else '（一般不用改）' }}</label>
+        <input type="text" name="{{ key }}_base_url" value="{{ settings[key + '_base_url'] }}"
+               placeholder="{{ p.base_url or 'https://你的接口地址/v1' }}">
+        <label>模型 ID{{ '（必填）' if key == 'custom' else '' }}</label>
+        <input type="text" name="{{ key }}_model" value="{{ settings[key + '_model'] }}" placeholder="{{ p.model or '你的模型名' }}">
+        <p class="muted small">Key 获取：{{ p.key_hint }}</p>
+      </div>
+    {% endfor %}
+  </div>
+
+  <div class="card">
+    <h3>开源平台 Token（可选）</h3>
+    <p class="muted">
+      不填也能搜索（GitHub 匿名额度 60 次/小时）。建议在
+      <a href="https://github.com/settings/tokens" target="_blank">GitHub Settings → Developer settings → Tokens</a>
+      生成一个仅勾选 public_repo 权限的 Token；Gitee 可在
+      <a href="https://gitee.com/profile/personal_access_tokens" target="_blank">个人设置 → 私人令牌</a> 生成。
+    </p>
+    <label>GitHub Token</label>
+    <input type="password" name="github_token" value="{{ settings.github_token }}">
+    <label>Gitee Token</label>
+    <input type="password" name="gitee_token" value="{{ settings.gitee_token }}">
+  </div>
+
+  <button class="btn" type="submit">保存设置</button>
+</form>
+
+<script>
+function switchProvider(sel) {
+  document.querySelectorAll('.provider-group').forEach(function (g) {
+    g.classList.toggle('active', g.dataset.provider === sel);
+  });
+  document.querySelectorAll('.provider-radio input').forEach(function (r) {
+    r.checked = (r.value === sel);
+  });
+}
+</script>
+{% endblock %}

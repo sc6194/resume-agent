@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}项目库 · 求职简历助手{% endblock %}
+{% block content %}
+<h1>项目库</h1>
+<p class="muted">录入你做过的项目（做过什么、用什么技术、有哪些量化成果），岗位分析时会在这里匹配。</p>
+
+<div class="card">
+  <h3>AI 自动识别填写（推荐）</h3>
+  <p class="muted">把项目介绍 / README 里关于你贡献的部分粘贴过来，AI 会自动识别并填好下方表单，核对修改后点击「添加项目」入库。</p>
+  <div class="form">
+    <textarea id="ai_text" rows="5" placeholder="粘贴项目描述，例如：这是一个交通流量预测系统，我使用 Python 和 Pandas 清洗历史数据，用 LSTM 模型训练预测，接口通过 Flask 部署，预测准确率提升 15%…"></textarea>
+    <button class="btn" type="button" id="ai_fill_btn" onclick="aiFill()">🤖 AI 识别并自动填写</button>
+    <div id="ai_status" class="muted" style="margin-top:8px;"></div>
+  </div>
+</div>
+
+<div class="card">
+  <h3>{{ '编辑项目' if edit_project else '手动添加项目' }}</h3>
+  {% if edit_project %}
+    <p class="muted">正在编辑《{{ edit_project.name }}》，修改后点「保存修改」；<a href="{{ url_for('projects_page') }}">取消编辑</a></p>
+  {% endif %}
+  <form method="post" action="{{ url_for('projects_edit', project_id=edit_project.id) if edit_project else url_for('projects_page') }}" class="form">
+    <div class="grid-2">
+      <div><label>项目名称 *</label><input name="name" value="{{ edit_project.name if edit_project else '' }}" required></div>
+      <div><label>我的角色</label><input name="role" value="{{ edit_project.role if edit_project else '' }}" placeholder="核心开发 / 数据分析 / 全栈"></div>
+    </div>
+    <label>技术栈（逗号分隔，如 Python, Flask, Pandas）</label>
+    <input name="tech_stack" value="{{ edit_project.tech_stack_text if edit_project else '' }}" placeholder="Python, Flask, Pandas">
+    <label>项目描述（做了什么、解决什么问题，1-3 句）</label>
+    <textarea name="description" rows="3">{{ edit_project.description if edit_project else '' }}</textarea>
+    <label>亮点 / 量化成果（每行一条，如「接口响应时间降低 40%」）</label>
+    <textarea name="highlights" rows="4">{{ edit_project.highlights_text if edit_project else '' }}</textarea>
+    <label>项目链接（GitHub/线上地址，可选）</label>
+    <input name="source_url" value="{{ edit_project.source_url if edit_project else '' }}" placeholder="https://...">
+    <button class="btn" type="submit">{{ '保存修改' if edit_project else '添加项目' }}</button>
+    {% if edit_project %}
+      <a class="btn-plain" href="{{ url_for('projects_page') }}">取消</a>
+    {% endif %}
+  </form>
+</div>
+
+<script>
+async function aiFill() {
+  const text = document.getElementById('ai_text').value.trim();
+  const btn = document.getElementById('ai_fill_btn');
+  const status = document.getElementById('ai_status');
+  if (!text) {
+    status.textContent = '请先粘贴项目描述文本';
+    status.className = 'warn-text';
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = '🤖 识别中…';
+  status.textContent = '';
+  status.className = 'muted';
+  try {
+    const resp = await fetch("{{ url_for('projects_parse') }}", {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ text: text })
+    });
+    const data = await resp.json();
+    if (!data.ok) {
+      status.textContent = data.error || '识别失败，请重试';
+      status.className = 'warn-text';
+      return;
+    }
+    const p = data.project || {};
+    document.getElementsByName('name')[0].value = p.name || '';
+    document.getElementsByName('role')[0].value = p.role || '';
+    document.getElementsByName('tech_stack')[0].value = (p.tech_stack || []).join(', ');
+    document.getElementsByName('description')[0].value = p.description || '';
+    document.getElementsByName('highlights')[0].value = (p.highlights || []).join('\n');
+    document.getElementsByName('source_url')[0].value = p.source_url || '';
+    status.textContent = '✔ 已自动填写下方表单，请核对修改后点击「添加项目」';
+    status.className = 'ok-text';
+    document.getElementsByName('name')[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+  } catch (e) {
+    status.textContent = '请求失败：' + e.message;
+    status.className = 'warn-text';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🤖 AI 识别并自动填写';
+  }
+}
+</script>
+
+<h2>项目列表（{{ projects|length }}）</h2>
+{% if projects %}
+  <div class="project-list">
+    {% for p in projects %}
+      <div class="card project-card">
+        <div class="project-head">
+          <b>{{ p.name }}</b>
+          <span class="badge {{ 'badge-deployed' if p.deployed else 'badge-user' }}">
+            {{ '已部署' if p.deployed else ('开源项目' if p.source != 'user' else '我的项目') }}
+          </span>
+          {% if p.deployed and p.deploy_url %}<a class="muted" href="{{ p.deploy_url }}" target="_blank">部署地址 ↗</a>{% endif %}
+        </div>
+        <div class="muted">{{ p.role }}{% if p.tech_stack %} · {{ p.tech_stack|join(' / ') }}{% endif %}</div>
+        {% if p.description %}<p>{{ p.description }}</p>{% endif %}
+        {% if p.highlights %}
+          <ul class="tight">
+            {% for h in p.highlights %}<li>{{ h }}</li>{% endfor %}
+          </ul>
+        {% endif %}
+        {% if p.source_url %}<div class="muted small">来源：<a href="{{ p.source_url }}" target="_blank">{{ p.source_url }}</a></div>{% endif %}
+        <div class="actions" style="margin-top:10px;">
+          <a class="btn-plain" href="{{ url_for('projects_page', edit=p.id) }}">编辑</a>
+          <form method="post" action="{{ url_for('projects_delete', project_id=p.id) }}" class="inline-form">
+            <button class="btn-danger" type="submit" onclick="return confirm('确定删除该项目？')">删除</button>
+          </form>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <p class="muted">项目库还是空的。可以手动添加，或在上方粘贴项目描述让 AI 自动识别填写。</p>
+{% endif %}
+{% endblock %}

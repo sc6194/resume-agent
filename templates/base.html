@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}求职简历助手{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">📄 求职简历助手 <span class="tag">resume-agent</span></div>
+  <nav>
+    <a href="{{ url_for('index') }}" class="{{ 'active' if request.endpoint == 'index' }}">工作台</a>
+    <a href="{{ url_for('settings_page') }}" class="{{ 'active' if request.endpoint == 'settings_page' }}">连接设置</a>
+    <a href="{{ url_for('templates_page') }}" class="{{ 'active' if request.endpoint in ('templates_page','template_upload','template_delete') }}">简历模板</a>
+    <a href="{{ url_for('profile_page') }}" class="{{ 'active' if request.endpoint == 'profile_page' }}">个人资料</a>
+    <a href="{{ url_for('projects_page') }}" class="{{ 'active' if request.endpoint in ('projects_page','projects_parse','projects_delete','projects_edit') }}">项目库</a>
+    <a href="{{ url_for('analyze_page') }}" class="{{ 'active' if request.endpoint in ('analyze_page','analyze_delete') }}">岗位分析</a>
+    <a href="{{ url_for('recommend_page') }}" class="{{ 'active' if request.endpoint in ('recommend_page','recommend_search','recommend_select','deploy_page') }}">开源推荐</a>
+    <a href="{{ url_for('resume_page') }}" class="{{ 'active' if request.endpoint in ('resume_page','resume_generate','resume_delete') }}">生成简历</a>
+  </nav>
+</header>
+<main class="container">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, msg in messages %}
+        <div class="flash flash-{{ category }}">{{ msg }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+  {% block content %}{% endblock %}
+</main>
+<footer class="footer">
+  本工具仅在本机运行，数据保存在项目 data/ 目录，请勿部署到公网。调用大模型 API 会产生少量费用。
+</footer>
+</body>
+</html>
